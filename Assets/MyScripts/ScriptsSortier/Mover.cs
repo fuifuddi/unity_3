@@ -4,7 +4,7 @@ using System.Collections;
 public class Mover : MonoBehaviour
 {
     private Vector3 moveOffset = Vector3.back;
-    public float moveDuration = 0.5f;
+    private float moveDuration = 0.25f;
 
     private bool isMoving = false;
     private Vector3 startPosition;
