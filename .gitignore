@@ -1,0 +1,31 @@
+# → Unity‐Cache‐ und Build‐Ordner (NIEMALS versionieren)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+MemoryCaptures/
+UserSettings/
+
+# → IDE/OS‐Dateien
+.vscode/
+.vs/
+.idea/
+*.sln
+*.csproj
+*.unityproj
+*.user
+.DS_Store
+Thumbs.db
+
+# → Unity‐Build‐Ergebnisse (optional, falls du mal Android/iOS baust)
+*.apk
+*.unitypackage
+*.xcworkspace
+*.xcuserstate
+*.p12
+*.mobileprovision
+
+# → GANZ WICHTIG: Meta‐Dateien unter KEINEN Umständen ignorieren!
+!*.meta
