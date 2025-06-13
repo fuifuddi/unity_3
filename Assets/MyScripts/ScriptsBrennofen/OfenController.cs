@@ -21,13 +21,16 @@ public class MovementController : M2MqttUnityClient
 
     [Header("Conveyor-Signal")]
     [Tooltip("Topic + Message für das ‚weiterfahren auf dem Fließband‘")]
-    private string conveyorSignalTopic = "color/I2";
+    private string conveyorSignalTopic1 = "color/I2";
+    private string conveyorSignalTopic2 = "color/I3";
     private string conveyorSignalMessage = "read";
 
     // intern
     private bool conveyorSignalReceived = false;
-    private const float conveyorZThreshold = 4.45f;
-    private readonly Vector3 conveyorStopPos = new Vector3(4.45f, 0.4691761f, 2.59f);
+    private const float xThreshold_1 = 4.45f;
+    private const float xThreshold_2 = 10.1f;
+    private readonly Vector3 conveyorStopPos1 = new Vector3(xThreshold_1, 0.4691761f, 2.59f);
+    private readonly Vector3 conveyorStopPos2 = new Vector3(xThreshold_2, 0.4691761f, 2.59f);
 
     [Header("Zylinder (Coin) Spawn")]
     public GameObject coinPrefab;
@@ -234,10 +237,14 @@ public class MovementController : M2MqttUnityClient
     private class ConveyorWaitAction : IAction
     {
         private MovementController ctrl;
+        private float zThreshold;
+        private Vector3 stopPos;
 
-        public ConveyorWaitAction(MovementController c)
+        public ConveyorWaitAction(MovementController c, float zThreshold, Vector3 stopPos)
         {
             ctrl = c;
+            this.zThreshold = zThreshold;
+            this.stopPos = stopPos;
         }
 
         public IEnumerator Execute()
@@ -246,7 +253,7 @@ public class MovementController : M2MqttUnityClient
             if (ctrl.conveyorSignalReceived)
             {
                 if (ctrl.coin != null)
-                    ctrl.coin.position = ctrl.conveyorStopPos;
+                    ctrl.coin.position = stopPos;
                 yield break;
             }
 
@@ -255,7 +262,7 @@ public class MovementController : M2MqttUnityClient
                 yield return null;
 
             // Warten bis Coin über Threshold oder Signal da
-            while (ctrl.coin.position.x <= conveyorZThreshold
+            while (ctrl.coin.position.x <= zThreshold
                    && !ctrl.conveyorSignalReceived)
             {
                 yield return null;
@@ -266,19 +273,20 @@ public class MovementController : M2MqttUnityClient
                 ctrl.coinRb.isKinematic = true;
 
             // Auf exakte Stop-Position teleportieren
-            ctrl.coin.position = ctrl.conveyorStopPos;
+            ctrl.coin.position = stopPos;
 
             // Auf Signal warten
             while (!ctrl.conveyorSignalReceived)
                 yield return null;
 
             ctrl.coinRb.isKinematic = false;
+            ctrl.conveyorSignalReceived = false;
         }
 
         public void CompleteInstantly()
         {
             if (ctrl.coin != null)
-                ctrl.coin.position = ctrl.conveyorStopPos;
+                ctrl.coin.position = stopPos;
         }
     }
 
@@ -307,17 +315,18 @@ public class MovementController : M2MqttUnityClient
     protected override void SubscribeTopics()
     {
         client.Subscribe(
-            new string[] { startTopic, checkpointTopic, "multi/I8", conveyorSignalTopic, colorTopic, endTopic},
+            new string[] { startTopic, checkpointTopic, "multi/I8", conveyorSignalTopic1, conveyorSignalTopic2, colorTopic, endTopic},
             new byte[] {
                 MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                 MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                 MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                 MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                 MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE
+                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
             }
         );
-        Debug.Log($"[MovementController] Topics abonniert: {startTopic}, multi/I8, {checkpointTopic}, {conveyorSignalTopic}, {colorTopic}, {endTopic}");
+        Debug.Log($"[MovementController] Topics abonniert: {startTopic}, multi/I8, {checkpointTopic}, {conveyorSignalTopic1}, {conveyorSignalTopic2}, {colorTopic}, {endTopic}");
     }
 
     protected override void DecodeMessage(string topic, byte[] message)
@@ -362,11 +371,18 @@ public class MovementController : M2MqttUnityClient
         }
 
         // Conveyor-Signal
-        if (topic == conveyorSignalTopic
+        if (topic == conveyorSignalTopic1
             && msg.Equals(conveyorSignalMessage, StringComparison.InvariantCultureIgnoreCase))
         {
             conveyorSignalReceived = true;
-            Debug.Log("[MovementController] Conveyor-Signal empfangen → Coin darf weiter.");
+            Debug.Log("[MovementController] Conveyor-Signal 1 empfangen → Coin darf weiter.");
+            return;
+        }
+        if (topic == conveyorSignalTopic2
+            && msg.Equals(conveyorSignalMessage, StringComparison.InvariantCultureIgnoreCase))
+        {
+            conveyorSignalReceived = true;
+            Debug.Log("[MovementController] Conveyor-Signal 2 empfangen → Coin darf weiter.");
             return;
         }
 
@@ -493,7 +509,8 @@ public class MovementController : M2MqttUnityClient
             // nach Q14
             new ParallelAction(this, new List<IAction>
             {
-                new ConveyorWaitAction(this),
+                new ConveyorWaitAction(this, xThreshold_1, conveyorStopPos1),
+                new ConveyorWaitAction(this, xThreshold_2, conveyorStopPos2),
                 new MoveAction(this, object4_1, -object4_1.forward, obj4_1Distance, obj4_1Duration),
             }),
         };
