@@ -6,12 +6,12 @@ public class ColorSensorController : MonoBehaviour
     public LayerMask detectionLayer;
 
     public GameObject redGroup;
-    public GameObject greenGroup;
+    public GameObject whiteGroup;
     public GameObject blueGroup;
 
-    public float redDelay = 3f;
-    public float greenDelay = 2f;
-    public float blueDelay = 1f;
+    public float redDelay = 2f;
+    public float whiteDelay = 1f;
+    public float blueDelay = 3f;
 
     private bool isActivated = false;
     private float cooldown = 2f;
@@ -38,10 +38,10 @@ public class ColorSensorController : MonoBehaviour
                     Debug.Log("[Sensor] Rot erkannt – starte Gruppe Rot nach " + redDelay + " Sekunden");
                     StartCoroutine(ActivateAfterDelay(redGroup, redDelay, "Rot"));
                 }
-                else if (IsColorNear(detectedColor, Color.green))
+                else if (IsColorNear(detectedColor, Color.white))
                 {
-                    Debug.Log("[Sensor] Grün erkannt – starte Gruppe Grün nach " + greenDelay + " Sekunden");
-                    StartCoroutine(ActivateAfterDelay(greenGroup, greenDelay, "Grün"));
+                    Debug.Log("[Sensor] Weiß erkannt – starte Gruppe Weiß nach " + whiteDelay + " Sekunden");
+                    StartCoroutine(ActivateAfterDelay(whiteGroup, whiteDelay, "Weiß"));
                 }
                 else if (IsColorNear(detectedColor, Color.blue))
                 {
@@ -86,11 +86,9 @@ public class ColorSensorController : MonoBehaviour
                Mathf.Abs(actual.b - target.b) < tolerance;
     }
 
-
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawRay(transform.position, transform.forward * rayLength);
     }
-
 }

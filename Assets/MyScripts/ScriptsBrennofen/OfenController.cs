@@ -16,7 +16,7 @@ public class MovementController : M2MqttUnityClient
     [Header("Subscription Settings")]
     private string startTopic = "multi/I9";
     private string checkpointTopic = "multi/Q14";
-    private string colorTopic = "color/detector";
+    private string colorTopic = "unity/detector";
     private string endTopic = "color/Q2";
 
     [Header("Conveyor-Signal")]
@@ -315,19 +315,56 @@ public class MovementController : M2MqttUnityClient
     protected override void SubscribeTopics()
     {
         client.Subscribe(
-            new string[] { startTopic, checkpointTopic, "multi/I8", conveyorSignalTopic1, conveyorSignalTopic2, colorTopic, endTopic},
+            new string[] {
+            // schon vorher
+            startTopic,               // "multi/I9"
+            checkpointTopic,          // "multi/Q14"
+            "multi/I8",
+            conveyorSignalTopic1,     // "color/I2"
+            conveyorSignalTopic2,     // "color/I3"
+            colorTopic,               // "unity/detector"
+            endTopic,                 // "color/Q2"
+
+            // neu hinzugefügt
+            "multi/Q5",
+            "multi/I6",
+            "multi/Q8",
+            "multi/Q6",
+            "multi/I7",
+            "multi/Q11",
+            "multi/I5",
+            "multi/Q4",
+            "multi/I4",
+            "multi/I2",
+            "multi/Q3"
+            },
             new byte[] {
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            // vorher 7 Einträge
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+
+            // neu 11 Einträge
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/Q5
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/I6
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/Q8
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/Q6
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/I7
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/Q11
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/I5
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/Q4
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/I4
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, // multi/I2
+            MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE  // multi/Q3
             }
         );
-        Debug.Log($"[MovementController] Topics abonniert: {startTopic}, multi/I8, {checkpointTopic}, {conveyorSignalTopic1}, {conveyorSignalTopic2}, {colorTopic}, {endTopic}");
+        Debug.Log("[MovementController] Topics abonniert!");
     }
+
 
     protected override void DecodeMessage(string topic, byte[] message)
     {
@@ -443,7 +480,7 @@ public class MovementController : M2MqttUnityClient
 
     private IEnumerator SequenceRoutine()
     {
-        // Flags & Tracking initialisieren
+        // ─── Flags & Tracking initialisieren ──────────────────────────
         receivedCheckpoints.Clear();
         checkpointKeys.Clear();
         skipToCheckpoint = false;
@@ -451,102 +488,163 @@ public class MovementController : M2MqttUnityClient
         currentCheckpointKey = null;
         conveyorSignalReceived = false;
 
+        // ─── 1) Key-Strings definieren ────────────────────────────────
+        string q5Key = "multi/Q5:start";
+        string i6Key = "multi/I6:read";
+        string q8Key = "multi/Q8:start";
+        string q6Key = "multi/Q6:start";
+        string i7Key = "multi/I7:read";
         string i8Key = "multi/I8:read";
+        string q11Key = "multi/Q11:start";
+        string q8Key_second = "multi/Q8:start";    // derselbe Topic-String, eigener key
+        string i5Key = "multi/I5:read";
+        string q11StopKey = "multi/Q11:stop";
+        string i4Key = "multi/I4:read";
+        string q4Key = "multi/Q4:stop";
+        string i2Key = "multi/I2:read";
         string q14Key = checkpointTopic + ":stop";
+        string q3Key = "multi/Q3:start";
         string q2Key = endTopic + ":stop";
         string postKey = "__after_checkpoint";
 
-        // 2) Aktionsgruppen definieren
-        var groupA = new List<IAction>
+        // ─── 2) Aktionsgruppen definieren ─────────────────────────────
+        var group1 = new List<IAction>
+    {
+        new MoveAction(this, object1, Vector3.up,   obj1Distance, obj1Duration),
+        new WaitAction(this, initialPause),
+    };
+        var group2 = new List<IAction>
+    {
+        new CallbackAction(this, () => { if (coin!=null) coin.SetParent(object2, true); }),
+        new MoveAction(this, object2, Vector3.left, obj2Distance, obj2Duration),
+    };
+        var group3 = new List<IAction>
+    {
+        new MoveAction(this, object1, Vector3.down, obj1Distance, obj1Duration),
+    };
+        var group4 = new List<IAction>
+    {
+        new WaitAction(this, brennPause),
+        new MoveAction(this, object1, Vector3.up,   obj1Distance, obj1Duration),
+        
+    };
+        var group5 = new List<IAction>
+    {
+        new WaitAction(this, initialPause),
+        new MoveAction(this, object2, Vector3.right,obj2Distance, obj2Duration),
+    };
+        var group6 = new List<IAction>
+    {
+        new ParallelAction(this, new List<IAction>
         {
-            // Schritte bis ParallelAction
-            new MoveAction(this, object1, Vector3.up,   obj1Distance, obj1Duration),
-            new WaitAction(this, initialPause),
-            new CallbackAction(this, () => { if (coin!=null) coin.SetParent(object2, true); }),
-            new MoveAction(this, object2, Vector3.left, obj2Distance, obj2Duration),
             new MoveAction(this, object1, Vector3.down, obj1Distance, obj1Duration),
-            new WaitAction(this, brennPause),
-            new MoveAction(this, object1, Vector3.up,   obj1Distance, obj1Duration),
-            new WaitAction(this, initialPause),
-            new MoveAction(this, object2, Vector3.right,obj2Distance, obj2Duration),
-            new ParallelAction(this, new List<IAction>
-            {
-                new MoveAction(this, object1, Vector3.down, obj1Distance, obj1Duration),
-                new MoveAction(this, object3, Vector3.back,  obj3Distance, obj3MoveDuration)
-            })
-        };
-
-        var groupB = new List<IAction>
+            new MoveAction(this, object3, Vector3.back,  obj3Distance, obj3MoveDuration)
+        }),
+    };
+        var group7 = new List<IAction>
+    {
+        new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
+        
+    };
+        var group8 = new List<IAction>
+    {
+        new WaitAction(this, subObjPause),
+        new CallbackAction(this, () => { if (coin!=null) coin.SetParent(object3_1, true); }),
+        new MoveAction(this, object3_1, Vector3.up,   subObjDistance, subObjDuration),
+    };
+        var group9 = new List<IAction>
+    {
+        new MoveAction(this, object3,   Vector3.forward,obj3Distance, obj3MoveDuration),
+    };
+        var group10 = new List<IAction>
+    {
+        new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
+        
+    };
+        var group11 = new List<IAction>
+    {
+        new WaitAction(this, subObjPause),
+        new CallbackAction(this, () => { if (coin!=null) coin.SetParent(null, true); }),
+        new MoveAction(this, object3_1, Vector3.up,   subObjDistance, subObjDuration),
+        new CallbackAction(this, () => { if (coin!=null && object4!=null) coin.SetParent(object4, true); }),
+    };
+        var group12 = new List<IAction>
+    {
+        new RotateAction(this, object4, rotationPivot4.position, Vector3.up, 180f, rotationDuration*2f),
+    };
+        var group13 = new List<IAction>
+    {
+        new RotateAction(this, object5, rotationPivot5.position, object5Axis, object5Angle, object5Duration),
+    };
+        var group14 = new List<IAction>
+    {
+        new RotateAction(this, object4, rotationPivot4.position, Vector3.up, 90f, rotationDuration),
+        new CallbackAction(this, () => {
+            if (coin != null)
+                coin.SetParent(object4_1, true);
+        }),
+    };
+        var group15 = new List<IAction>
+    {
+        new MoveAction(this, object4_1, object4_1.forward, obj4_1Distance, obj4_1Duration),
+        new CallbackAction(this, () => {
+            if (coinRb != null) coinRb.isKinematic = false;
+            if (coin != null)
+                coin.SetParent(null, true);
+        }),
+    };
+        var group16 = new List<IAction>
+    {
+        new ParallelAction(this, new List<IAction>
         {
-            // Schritte nach ParallelAction bis Q14
-            new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
-            new WaitAction(this, subObjPause),
-            new CallbackAction(this, () => { if (coin!=null) coin.SetParent(object3_1, true); }),
-            new MoveAction(this, object3_1, Vector3.up,   subObjDistance, subObjDuration),
-            new MoveAction(this, object3,   Vector3.forward,obj3Distance, obj3MoveDuration),
-            new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
-            new WaitAction(this, subObjPause),
-            new CallbackAction(this, () => { if (coin!=null) coin.SetParent(null, true); }),
-            new MoveAction(this, object3_1, Vector3.up,   subObjDistance, subObjDuration),
-            new CallbackAction(this, () => { if (coin!=null && object4!=null) coin.SetParent(object4, true); }),
-            new RotateAction(this, object4, rotationPivot4.position, Vector3.up, 180f, rotationDuration*2f),
-            new RotateAction(this, object5, rotationPivot5.position, object5Axis, object5Angle, object5Duration),
-            new RotateAction(this, object4, rotationPivot4.position, Vector3.up, 90f, rotationDuration),
-            new CallbackAction(this, () => {
-                if (coin != null)
-                    coin.SetParent(object4_1, true);
-            }),
-            new MoveAction(this, object4_1, object4_1.forward, obj4_1Distance, obj4_1Duration),
-            new CallbackAction(this, () => {
-                if (coinRb != null) coinRb.isKinematic = false;
-                if (coin != null)
-                    coin.SetParent(null, true);
-            }),
-        };
+            new ConveyorWaitAction(this, xThreshold_1, conveyorStopPos1),
+            new ConveyorWaitAction(this, xThreshold_2, conveyorStopPos2),
+            new MoveAction(this, object4_1, -object4_1.forward, obj4_1Distance, obj4_1Duration),
+        }),
+    };
+        var group17 = new List<IAction>
+    {
+        new RotateAction(this, object4, rotationPivot4.position, Vector3.up, -270f, rotationDuration*3f),
+    };
 
-        var groupC = new List<IAction>
-        {
-            // nach Q14
-            new ParallelAction(this, new List<IAction>
-            {
-                new ConveyorWaitAction(this, xThreshold_1, conveyorStopPos1),
-                new ConveyorWaitAction(this, xThreshold_2, conveyorStopPos2),
-                new MoveAction(this, object4_1, -object4_1.forward, obj4_1Distance, obj4_1Duration),
-            }),
-        };
+        // ─── 3) Reihenfolge als Liste von Paaren ────────────────────────
+        var sequence = new List<(string key, List<IAction> actions)>
+    {
+        (q5Key,        group1),
+        (i6Key,        group2),
+        (q8Key,        group3),
+        (q6Key,        group4),
+        (i7Key,        group5),
+        (i8Key,        group6),
+        (q11Key,       group7),
+        (q8Key_second, group8),   // gleicher Topic-String, eigener Schritt
+        (i5Key,        group9),
+        (q11StopKey,   group10),
+        (i4Key,        group11),
+        (q4Key,        group12),
+        (i2Key,        group13),
+        (q14Key,       group14),
+        (q3Key,        group15),
+        (q2Key,        group16),
+        (postKey,      group17)
+    };
 
-        var groupD = new List<IAction>
-        {
-            new RotateAction(this, object4, rotationPivot4.position, Vector3.up, -270f, rotationDuration*3f),
-        };
+        // checkpointKeys aus allen Keys, außer dem letzten
+        var allKeys = sequence.Select(entry => entry.key).ToList();
+        checkpointKeys = allKeys.Take(allKeys.Count - 1).ToList();
 
-        // Mapping Key → Gruppe
-        var map = new Dictionary<string, List<IAction>>
-        {
-            { i8Key,   groupA },
-            { q14Key,  groupB },
-            { q2Key,   groupC },
-            { postKey, groupD }
-        };
-
-        var allKeys = map.Keys.ToList();
-
-        // checkpointKeys bekommt automatisch alle Keys außer dem letzten
-        checkpointKeys = allKeys
-            .Take(allKeys.Count - 1)
-            .ToList();
-
-        // 3) Dynamische Schleife
-        foreach (var key in map.Keys.ToList())
+        // ─── 4) Dynamische Schleife ────────────────────────────────────
+        foreach (var (key, actions) in sequence)
         {
             Debug.Log($"Now key {key}");
             currentCheckpointKey = key;
             reachedCheckpoint = false;
 
-            foreach (var action in map[key])
+            foreach (var action in actions)
                 yield return action.Execute();
 
             reachedCheckpoint = true;
+
             if (key != postKey)
             {
                 if (!receivedCheckpoints.Contains(key))
@@ -564,7 +662,7 @@ public class MovementController : M2MqttUnityClient
 
         uiController?.SetReady(true);
 
-        // 4) Cleanup
+        // ─── 5) Cleanup ────────────────────────────────────────────────
         sequenceStarted = false;
         skipToCheckpoint = false;
         reachedCheckpoint = false;
@@ -574,6 +672,7 @@ public class MovementController : M2MqttUnityClient
         coin = null;
         coinRb = null;
     }
+
 
     // ─── HELPER COROUTINES ──────────────────────────
 
