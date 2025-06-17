@@ -1,11 +1,11 @@
-﻿using System;
+﻿using M2MqttUnity;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using M2MqttUnity;
-using uPLibrary.Networking.M2Mqtt.Messages;
-using System.Text;
 using System.Linq;
+using System.Text;
+using UnityEngine;
+using uPLibrary.Networking.M2Mqtt.Messages;
 
 public class MovementController : M2MqttUnityClient
 {
@@ -526,7 +526,7 @@ public class MovementController : M2MqttUnityClient
     {
         new WaitAction(this, brennPause),
         new MoveAction(this, object1, Vector3.up,   obj1Distance, obj1Duration),
-        
+
     };
         var group5 = new List<IAction>
     {
@@ -544,7 +544,7 @@ public class MovementController : M2MqttUnityClient
         var group7 = new List<IAction>
     {
         new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
-        
+
     };
         var group8 = new List<IAction>
     {
@@ -559,7 +559,7 @@ public class MovementController : M2MqttUnityClient
         var group10 = new List<IAction>
     {
         new MoveAction(this, object3_1, Vector3.down, subObjDistance, subObjDuration),
-        
+
     };
         var group11 = new List<IAction>
     {
@@ -587,16 +587,16 @@ public class MovementController : M2MqttUnityClient
         var group15 = new List<IAction>
     {
         new MoveAction(this, object4_1, object4_1.forward, obj4_1Distance, obj4_1Duration),
-        new CallbackAction(this, () => {
-            if (coinRb != null) coinRb.isKinematic = false;
-            if (coin != null)
-                coin.SetParent(null, true);
-        }),
     };
         var group16 = new List<IAction>
     {
-        new ParallelAction(this, new List<IAction>
-        {
+            new ParallelAction(this, new List<IAction>
+            {
+                new CallbackAction(this, () => {
+                if (coinRb != null) coinRb.isKinematic = false;
+                if (coin != null)
+                    coin.SetParent(null, true);
+            }),
             new ConveyorWaitAction(this, xThreshold_1, conveyorStopPos1),
             new ConveyorWaitAction(this, xThreshold_2, conveyorStopPos2),
             new MoveAction(this, object4_1, -object4_1.forward, obj4_1Distance, obj4_1Duration),

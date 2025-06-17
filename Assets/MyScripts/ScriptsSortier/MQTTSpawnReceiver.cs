@@ -1,7 +1,7 @@
-using UnityEngine;
 using M2MqttUnity;
-using uPLibrary.Networking.M2Mqtt.Messages;
 using System.Text;
+using UnityEngine;
+using uPLibrary.Networking.M2Mqtt.Messages;
 
 public class MQTTReceiver : M2MqttUnityClient
 {
